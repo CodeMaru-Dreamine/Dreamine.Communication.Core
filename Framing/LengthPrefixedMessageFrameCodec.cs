@@ -1,8 +1,4 @@
-﻿using System;
-using System.Buffers.Binary;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using System.Buffers.Binary;
 
 namespace Dreamine.Communication.Core.Framing;
 
@@ -12,6 +8,30 @@ namespace Dreamine.Communication.Core.Framing;
 public sealed class LengthPrefixedMessageFrameCodec : IMessageFrameCodec
 {
     private const int HeaderSize = 4;
+
+    private readonly int _maxFrameLength;
+
+    /// <summary>
+    /// \brief LengthPrefixedMessageFrameCodec 클래스의 새 인스턴스를 초기화합니다.
+    /// </summary>
+    public LengthPrefixedMessageFrameCodec()
+        : this(1024 * 1024)
+    {
+    }
+
+    /// <summary>
+    /// \brief LengthPrefixedMessageFrameCodec 클래스의 새 인스턴스를 초기화합니다.
+    /// </summary>
+    /// <param name="maxFrameLength">최대 프레임 길이입니다.</param>
+    public LengthPrefixedMessageFrameCodec(int maxFrameLength)
+    {
+        if (maxFrameLength <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(maxFrameLength));
+        }
+
+        _maxFrameLength = maxFrameLength;
+    }
 
     /// <summary>
     /// \brief 하나의 메시지 프레임을 스트림에 기록합니다.
@@ -26,6 +46,12 @@ public sealed class LengthPrefixedMessageFrameCodec : IMessageFrameCodec
     {
         ArgumentNullException.ThrowIfNull(stream);
         ArgumentNullException.ThrowIfNull(payload);
+
+        if (payload.Length > _maxFrameLength)
+        {
+            throw new InvalidDataException(
+                $"Frame length exceeded. Length={payload.Length}, MaxFrameLength={_maxFrameLength}");
+        }
 
         var header = new byte[HeaderSize];
         BinaryPrimitives.WriteInt32BigEndian(header, payload.Length);
@@ -57,9 +83,10 @@ public sealed class LengthPrefixedMessageFrameCodec : IMessageFrameCodec
 
         var length = BinaryPrimitives.ReadInt32BigEndian(header);
 
-        if (length < 0)
+        if (length < 0 || length > _maxFrameLength)
         {
-            throw new InvalidDataException("Invalid frame length.");
+            throw new InvalidDataException(
+                $"Invalid frame length. Length={length}, MaxFrameLength={_maxFrameLength}");
         }
 
         if (length == 0)
@@ -82,8 +109,9 @@ public sealed class LengthPrefixedMessageFrameCodec : IMessageFrameCodec
         while (offset < length)
         {
             var read = await stream.ReadAsync(
-                buffer.AsMemory(offset, length - offset),
-                cancellationToken).ConfigureAwait(false);
+                    buffer.AsMemory(offset, length - offset),
+                    cancellationToken)
+                .ConfigureAwait(false);
 
             if (read == 0)
             {
