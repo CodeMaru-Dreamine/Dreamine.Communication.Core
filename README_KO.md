@@ -193,17 +193,19 @@ net8.0
 - `Dreamine.Communication.FullKit`
 - `Dreamine.Communication.Wpf`
 
-## 문서 점검 내용
+## Text Encoding 정책
 
-기존 README에는 패키지 역할, 의존성, 대상 프레임워크, 일반 기능은 들어가 있었습니다. 다만 아래 내용이 빠져 있거나 약했습니다.
+Text Encoding은 외부 Raw Byte를 `MessageEnvelope`로 변환하거나, `MessageEnvelope`의 Payload를 다시 외부 Byte로 변환하는 Protocol Adapter 경계에서 처리합니다.
 
-- `RawAvailableMessageFrameCodec`
-- Protocol Adapter 목록
-- Frame Codec 선택 기준
-- TCP Stream 경계 관련 주의 사항
-- Protocol Adapter + Frame Codec 권장 조합
+Encoding 옵션은 외부 바이트 기반 통신에 적용됩니다.
 
-이 문서에는 위 항목들을 반영했습니다.
+- TCP
+- UDP
+- Serial
+
+`PlainTextProtocolAdapter`와 `RawJsonProtocolAdapter`는 UTF-8 또는 CP949 같은 외부 Text Encoding을 설정할 수 있습니다. 현대 시스템 간 통신에는 UTF-8을 권장합니다. CP949는 레거시 Windows 툴, 한글 장비, UTF-8을 보내지 않는 테스트 툴과 연동할 때 사용할 수 있습니다.
+
+`InMemoryMessageBus`는 같은 프로세스 안에서 `MessageEnvelope` 객체를 직접 전달하므로 Text Encoding이 필요하지 않습니다. RabbitMQ도 기본 Dreamine 흐름에서는 `MessageEnvelope`를 UTF-8 JSON으로 직렬화하므로 별도 Encoding 옵션을 노출하지 않습니다.
 
 ## 라이선스
 

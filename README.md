@@ -193,17 +193,19 @@ net8.0
 - `Dreamine.Communication.FullKit`
 - `Dreamine.Communication.Wpf`
 
-## Documentation Check Notes
+## Text Encoding Policy
 
-The previous README already covered the package role, dependencies, target framework, and general features. The missing or weakly described areas were:
+Text encoding is handled at the protocol adapter boundary when raw external bytes are converted to a `MessageEnvelope`, or when a `MessageEnvelope` payload is converted back to external bytes.
 
-- `RawAvailableMessageFrameCodec`
-- protocol adapter list
-- frame codec selection guide
-- TCP stream boundary warning
-- recommended protocol adapter + frame codec combinations
+Encoding options are intended for external byte-based communication:
 
-These items are now included.
+- TCP
+- UDP
+- Serial
+
+`PlainTextProtocolAdapter` and `RawJsonProtocolAdapter` can be configured with an external text encoding such as UTF-8 or CP949. UTF-8 is recommended for modern systems. CP949 is useful when interoperating with legacy Windows tools, Korean industrial equipment, or test tools that do not send UTF-8 text.
+
+`InMemoryMessageBus` does not need text encoding because it passes `MessageEnvelope` objects inside the same process. RabbitMQ also does not expose this option in the default Dreamine flow because the adapter serializes `MessageEnvelope` data as UTF-8 JSON.
 
 ## License
 
